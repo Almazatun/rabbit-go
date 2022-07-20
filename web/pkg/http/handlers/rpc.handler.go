@@ -1,8 +1,10 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
 	"net/http"
+
+	rm "github.com/Almazatun/rabbit-go/web/pkg/rmq"
 )
 
 type RpcRequest struct {
@@ -19,7 +21,7 @@ func Rpc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := PublishMessage(rpcRequest.Mess)
+	res := rm.PublishMessage(rpcRequest.Mess)
 
 	json.NewEncoder(w).Encode(res)
 }

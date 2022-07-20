@@ -1,44 +1,28 @@
-package main
+package rmq
 
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
-	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+
+	config "github.com/Almazatun/rabbit-go/web/pkg/configs"
+	utils "github.com/Almazatun/rabbit-go/web/pkg/utils"
 )
 
-type Mess struct {
+type MessBody struct {
 	Id      string
-	Name    string
 	Message string
 }
 
-func randInt(min int, max int) int {
-	return min + rand.Intn(max-min)
-}
-
-func randomString(l int) string {
-	bytes := make([]byte, l)
-	for i := 0; i < l; i++ {
-		bytes[i] = byte(randInt(65, 90))
-	}
-	return string(bytes)
-}
-
-func PublishMessage(mess string) string {
-	fmt.Println("Service RabbitMQ")
-	var res string
+func PublishMessage(mess string) (res *MessBody) {
+	// fmt.Println("Service RabbitMQ")
 
 	// Local MQ
 	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 
-	user := os.Getenv("RABBITMQ_DEFAULT_USER")
-	pass := os.Getenv("RABBITMQ_DEFAULT_PASS")
-	host := os.Getenv("MQ_HOST")
-
-	conn, err := amqp.Dial("amqp://" + user + ":" + pass + "@" + host + ":5672/")
+	conn, err := amqp.Dial("amqp://" + config.RABBITMQ_DEFAULT_USER +
+		":" + config.RABBITMQ_DEFAULT_PASS + "@" + config.MQ_HOST + ":5672/")
 
 	if err != nil {
 		fmt.Println(err)
@@ -89,9 +73,9 @@ func PublishMessage(mess string) string {
 		panic(err)
 	}
 
-	corrId := randomString(32)
+	corrId := utils.RandomString(32)
 
-	reqBody := &Mess{Id: "bla", Name: "BLA", Message: mess}
+	reqBody := &MessBody{Id: utils.RandomString(5), Message: mess}
 
 	out, err := json.Marshal(reqBody)
 
@@ -121,7 +105,7 @@ func PublishMessage(mess string) string {
 		if corrId == d.CorrelationId {
 
 			fmt.Printf("Received a message: %s", d.Body)
-			var response Mess
+			var response MessBody
 
 			err := json.Unmarshal(d.Body, &response)
 
@@ -130,9 +114,9 @@ func PublishMessage(mess string) string {
 				panic(err)
 			}
 
-			fmt.Println("UPDATE_MESS_RESPONSE", response)
+			// fmt.Println("UPDATE_MESS_RESPONSE", response)
 
-			res = response.Message
+			res = &response
 
 			break
 		}

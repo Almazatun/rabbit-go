@@ -1,42 +1,29 @@
-package main
+package rmq
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
-	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+
+	config "github.com/Almazatun/rabbit-go/api/pkg/configs"
+	utils "github.com/Almazatun/rabbit-go/api/pkg/utils"
 )
 
-type Mess struct {
+type MessBody struct {
 	Id      string
-	Name    string
 	Message string
 }
 
-func randInt(min int, max int) int {
-	return min + rand.Intn(max-min)
-}
+type RMQ struct{}
 
-func randomString(l int) string {
-	bytes := make([]byte, l)
-	for i := 0; i < l; i++ {
-		bytes[i] = byte(randInt(65, 90))
-	}
-	return string(bytes)
-}
-
-func RabbitMQRPC() {
+func (r *RMQ) Rpc() {
 	// Local MQ
 	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 
-	user := os.Getenv("RABBITMQ_DEFAULT_USER")
-	pass := os.Getenv("RABBITMQ_DEFAULT_PASS")
-	host := os.Getenv("MQ_HOST")
-
-	conn, err := amqp.Dial("amqp://" + user + ":" + pass + "@" + host + ":5672/")
+	conn, err := amqp.Dial("amqp://" + config.RABBITMQ_DEFAULT_USER +
+		":" + config.RABBITMQ_DEFAULT_PASS + "@" + config.MQ_HOST + ":5672/")
 
 	if err != nil {
 		fmt.Println(err)
@@ -94,7 +81,7 @@ func RabbitMQRPC() {
 	go func() {
 		for d := range msgs {
 			fmt.Printf("Received a message: %s", d.Body)
-			var reqBody Mess
+			var reqBody MessBody
 
 			err := json.Unmarshal(d.Body, &reqBody)
 
@@ -103,11 +90,7 @@ func RabbitMQRPC() {
 				panic(err)
 			}
 
-			rand := randomString(6)
-
-			reqBody.Message = reqBody.Message + string(rand)
-
-			out, err := json.Marshal(reqBody)
+			out, err := json.Marshal(r.updateMessBody(&reqBody))
 
 			if err != nil {
 				fmt.Println(err)
@@ -130,8 +113,16 @@ func RabbitMQRPC() {
 		}
 	}()
 
-	fmt.Println("Successfully connected to RabbitMQ")
+	// fmt.Println("Successfully connected to RabbitMQ")
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	<-forever
+}
+
+func (r *RMQ) updateMessBody(messBody *MessBody) *MessBody {
+	rand := utils.RandomString(6)
+
+	messBody.Message = messBody.Message + string(rand)
+
+	return messBody
 }
