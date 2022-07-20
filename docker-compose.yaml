@@ -1,24 +1,48 @@
 version: "3.8"
 services:
+  rabbitmq:
+    container_name: mg_rabbitmq
+    image: rabbitmq:3.8-management-alpine
+    environment:
+    - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+    - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    ports:
+    # AMQP protocol port
+    - "5672:5672"
+    # HTTP management UI
+    - "15672:15672"
+    volumes:
+        - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+        - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    networks:
+        - rabbitmq_go
   api:
     container_name: mg_api
     build:
       context: ./api
       dockerfile: Dockerfile
-    env_file: 
-     - .env
+    env_file:
+      - .env
     networks:
-      - default
+      - rabbitmq_go
+    depends_on:
+     - rabbitmq
     ports:
-    - "3000:3000"
-  service:
-   container_name: mg_service
+     - "3002:3002"
+  web:
+   container_name: mg_web
    build:
-     context: ./service
+     context: ./web
      dockerfile: Dockerfile
-   env_file: 
-    - .env
+   env_file:
+      - .env
    networks:
-     - default
+     - rabbitmq_go
+   depends_on:
+     - rabbitmq
    ports:
    - "3001:3001"
+
+networks:
+  rabbitmq_go:
+    driver: bridge

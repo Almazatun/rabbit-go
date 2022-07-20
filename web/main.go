@@ -8,10 +8,9 @@ import (
 )
 
 func main() {
-	go RabbitMQRPC()
-
 	router := mux.NewRouter()
 
-	log.Fatal(http.ListenAndServe(":3002", router))
+	router.HandleFunc("/rpc", Rpc).Methods("POST")
 
+	log.Fatal(http.ListenAndServe(":3001", router))
 }
