@@ -1,4 +1,4 @@
-module github.com/Almazatun/TMQ-go/web
+module github.com/Almazatun/rabbit-go/web
 
 go 1.18
 

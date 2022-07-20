@@ -1,8 +1,10 @@
 version: "3.8"
 services:
   rabbitmq:
-    container_name: mg_rabbitmq
+    container_name: rabbitmq
     image: rabbitmq:3.8-management-alpine
+    healthcheck:
+      test: "exit 0"
     environment:
     - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
     - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
@@ -21,12 +23,15 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
+    environment:
+    - MQ_HOST=${MQ_HOST}
     env_file:
       - .env
     networks:
       - rabbitmq_go
     depends_on:
-     - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     ports:
      - "3002:3002"
   web:
@@ -34,12 +39,15 @@ services:
    build:
      context: ./web
      dockerfile: Dockerfile
+   environment:
+    - MQ_HOST=${MQ_HOST}
    env_file:
-      - .env
+     - .env
    networks:
      - rabbitmq_go
    depends_on:
-     - rabbitmq
+     rabbitmq:
+        condition: service_healthy
    ports:
    - "3001:3001"
 

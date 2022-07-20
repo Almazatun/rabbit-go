@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -31,9 +32,13 @@ func PublishMessage(mess string) string {
 	var res string
 
 	// Local MQ
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 
-	// conn, err := amqp.Dial("amqp://RABBITMQ_DEFAULT_USER:RABBITMQ_DEFAULT_PASS@<HOST>:5672/")
+	user := os.Getenv("RABBITMQ_DEFAULT_USER")
+	pass := os.Getenv("RABBITMQ_DEFAULT_PASS")
+	host := os.Getenv("MQ_HOST")
+
+	conn, err := amqp.Dial("amqp://" + user + ":" + pass + "@" + host + ":5672/")
 
 	if err != nil {
 		fmt.Println(err)
