@@ -1,4 +1,4 @@
 .env
 
-service/service
+web/web
 api/api
