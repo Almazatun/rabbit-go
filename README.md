@@ -1,5 +1,5 @@
 # Rabbit-go
-## Using the Go RabbitMQ client
+## Remote procedure call (RPC) (using the Go RabbitMQ client)
 <img src="./assets/2022-07-20_17-25.png">
 
 ### Run apps docker-compose
