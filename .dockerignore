@@ -1,8 +1,5 @@
 /.idea
 
-/../service/service
-/../api/api
-
 .git
 .gitignore
 README.md
