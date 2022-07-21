@@ -7,15 +7,16 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	config "github.com/Almazatun/rabbit-go/web/pkg/configs"
+	"github.com/Almazatun/rabbit-go/web/pkg/http/inputs"
 	utils "github.com/Almazatun/rabbit-go/web/pkg/utils"
 )
 
-type MessBody struct {
-	Id      string
-	Message string
+type RpcResult[T any] struct {
+	Method string
+	Result T
 }
 
-func PublishMessage(mess string) (res *MessBody) {
+func PublishMessage(regBody inputs.RpcRequest) (res *RpcResult[string]) {
 	// fmt.Println("Service RabbitMQ")
 
 	// Local MQ
@@ -61,7 +62,7 @@ func PublishMessage(mess string) (res *MessBody) {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -75,9 +76,7 @@ func PublishMessage(mess string) (res *MessBody) {
 
 	corrId := utils.RandomString(32)
 
-	reqBody := &MessBody{Id: utils.RandomString(5), Message: mess}
-
-	out, err := json.Marshal(reqBody)
+	out, err := json.Marshal(regBody)
 
 	if err != nil {
 		fmt.Println(err)
@@ -105,7 +104,7 @@ func PublishMessage(mess string) (res *MessBody) {
 		if corrId == d.CorrelationId {
 
 			fmt.Printf("Received a message: %s", d.Body)
-			var response MessBody
+			var response RpcResult[string]
 
 			err := json.Unmarshal(d.Body, &response)
 

@@ -8,12 +8,18 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	config "github.com/Almazatun/rabbit-go/api/pkg/configs"
+	domain "github.com/Almazatun/rabbit-go/api/pkg/domain"
 	utils "github.com/Almazatun/rabbit-go/api/pkg/utils"
 )
 
-type MessBody struct {
-	Id      string
-	Message string
+type RpcRequest struct {
+	Method string
+	Mess   string
+}
+
+type RpcResult[T any] struct {
+	Method string
+	Result T
 }
 
 type RMQ struct{}
@@ -69,7 +75,7 @@ func (r *RMQ) Rpc() {
 	msgs, err := ch.Consume(
 		q.Name, // c
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -81,7 +87,13 @@ func (r *RMQ) Rpc() {
 	go func() {
 		for d := range msgs {
 			fmt.Printf("Received a message: %s", d.Body)
-			var reqBody MessBody
+			var reqBody RpcRequest
+			var resBody []byte
+
+			rpcReqChannel := make(chan RpcRequest)
+			rpcResChannel := make(chan RpcResult[string])
+
+			go r.rpcMethodHandler(rpcReqChannel, rpcResChannel)
 
 			err := json.Unmarshal(d.Body, &reqBody)
 
@@ -90,12 +102,27 @@ func (r *RMQ) Rpc() {
 				panic(err)
 			}
 
-			out, err := json.Marshal(r.updateMessBody(&reqBody))
+			rpcReqChannel <- reqBody
 
-			if err != nil {
-				fmt.Println(err)
-				panic(err)
+			close(rpcReqChannel)
+
+			for res := range rpcResChannel {
+				out, err := json.Marshal(res)
+
+				if err != nil {
+					fmt.Println(err)
+					panic(err)
+				}
+				resBody = out
 			}
+
+			// out, err := json.Marshal(reqBody)
+			// out, err := json.Marshal(r.updateMessBody(&reqBody))
+
+			// if err != nil {
+			// 	fmt.Println(err)
+			// 	panic(err)
+			// }
 
 			err = ch.Publish(
 				"",        // exchange
@@ -103,13 +130,12 @@ func (r *RMQ) Rpc() {
 				false,     // mandatory
 				false,     // immediate
 				amqp.Publishing{
-					ContentType:   "text/plain",
 					CorrelationId: d.CorrelationId,
-					Body:          []byte(out),
+					ContentType:   "text/plain",
+					Body:          []byte(resBody),
 				})
 
 			d.Ack(false)
-
 		}
 	}()
 
@@ -119,10 +145,38 @@ func (r *RMQ) Rpc() {
 	<-forever
 }
 
-func (r *RMQ) updateMessBody(messBody *MessBody) *MessBody {
+func (r *RMQ) rpcMethodHandler(
+	rpcHandlerRequest <-chan RpcRequest,
+	rpcResponse chan RpcResult[string],
+) {
 	rand := utils.RandomString(6)
+	booUseCase := domain.Boo{}
+	fooUseCase := domain.Foo{}
 
-	messBody.Message = messBody.Message + string(rand)
+	for rpcRequestData := range rpcHandlerRequest {
+		switch rpcRequestData.Method {
+		case "boo.create":
+			rpcResponse <- RpcResult[string]{
+				Method: rpcRequestData.Method,
+				Result: booUseCase.Create(rpcRequestData.Mess) + rand + "-->1",
+			}
+		case "boo.update":
+			rpcResponse <- RpcResult[string]{
+				Method: rpcRequestData.Method,
+				Result: booUseCase.Update(rpcRequestData.Mess) + rand + "-->2",
+			}
+		case "foo.create":
+			rpcResponse <- RpcResult[string]{
+				Method: rpcRequestData.Method,
+				Result: fooUseCase.Create(rpcRequestData.Mess) + rand + "-->3",
+			}
+		case "foo.update":
+			rpcResponse <- RpcResult[string]{
+				Method: rpcRequestData.Method,
+				Result: fooUseCase.Update(rpcRequestData.Mess) + rand + "-->4",
+			}
+		}
+	}
 
-	return messBody
+	close(rpcResponse)
 }
