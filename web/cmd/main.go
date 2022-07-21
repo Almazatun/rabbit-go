@@ -4,14 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/go-playground/validator/v10"
-
 	"github.com/gorilla/mux"
 
 	handlers "github.com/Almazatun/rabbit-go/web/pkg/http/handlers"
 )
-
-var validate *validator.Validate
 
 func main() {
 	router := mux.NewRouter()
