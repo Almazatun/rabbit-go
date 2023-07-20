@@ -10,16 +10,12 @@ import (
 	"github.com/Almazatun/rabbit-go/gateway/pkg/rmq"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
 	loadENVs()
 	app := fiber.New()
-	rm := rmq.New(
-		make(map[string]*amqp.Queue),
-		make(map[string]*amqp.Channel),
-	)
+	rm := rmq.New()
 
 	c := rm.Connect(
 		helper.GetEnvVar("RABBITMQ_USER"),

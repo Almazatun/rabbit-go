@@ -28,13 +28,10 @@ type RmqClose struct {
 	MainCh *amqp.Channel
 }
 
-func New(
-	quesMap map[string]*amqp.Queue,
-	chsMap map[string]*amqp.Channel,
-) *RMQ {
+func New() *RMQ {
 	return &RMQ{
-		QueuesMap: quesMap,
-		chsMap:    chsMap,
+		QueuesMap: make(map[string]*amqp.Queue),
+		chsMap:    make(map[string]*amqp.Channel),
 		crlIdMap:  make(map[string]string),
 	}
 }
