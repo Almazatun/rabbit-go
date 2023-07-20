@@ -1,11 +1,11 @@
-# Rabbit-go
-## Remote procedure call (RPC) (using the Go RabbitMQ client)
+# 🐰 Rabbit-go
+## Remote procedure call with concurrent mode  (RPC) (using the Go RabbitMQ client)
 <img src="./assets/2022-07-20_17-25.png">
 
 ### Run services with docker-compose
 ```bash
 # Build and Up
-$ docker-compose up --build
+$ make compose_up
 # Stop
-$ docker-compose down
+$ make compose_down
 ```

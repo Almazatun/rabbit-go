@@ -6,8 +6,8 @@ services:
     healthcheck:
       test: "exit 0"
     environment:
-    - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
-    - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+    - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
     ports:
     # AMQP protocol port
     - "5672:5672"
@@ -18,13 +18,18 @@ services:
         - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
     networks:
         - rabbitmq_go
-  api:
-    container_name: mg_api
+
+  gateway:
+    container_name: mg_gateway
     build:
-      context: ./api
+      context: ./gateway
       dockerfile: Dockerfile
     environment:
-    - MQ_HOST=${MQ_HOST}
+    - RABBITMQ_HOST=${RABBITMQ_HOST}
+    - RABBITMQ_USER=${RABBITMQ_USER}
+    - RABBITMQ_PASS=${RABBITMQ_PASS}
+    - PORT=${PORT}
+    - SERVICE_RT=${SERVICE_RT_GATEWAY}
     env_file:
       - .env
     networks:
@@ -33,14 +38,19 @@ services:
       rabbitmq:
         condition: service_healthy
     ports:
-     - "3002:3002"
-  web:
-   container_name: mg_web
+     - "3000:3000"
+
+  service:
+   container_name: mg_service
    build:
-     context: ./web
+     context: ./service_a
      dockerfile: Dockerfile
    environment:
-    - MQ_HOST=${MQ_HOST}
+    - RABBITMQ_HOST=${RABBITMQ_HOST}
+    - RABBITMQ_USER=${RABBITMQ_USER}
+    - RABBITMQ_PASS=${RABBITMQ_PASS}
+    - PORT=${PORT}
+    - SERVICE_RT=${SERVICE_RT_SERVICE}
    env_file:
      - .env
    networks:
@@ -48,8 +58,6 @@ services:
    depends_on:
      rabbitmq:
         condition: service_healthy
-   ports:
-   - "3001:3001"
 
 networks:
   rabbitmq_go:
